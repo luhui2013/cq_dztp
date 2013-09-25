@@ -1,0 +1,276 @@
+﻿
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>ATS</title>
+<script src="jquery-1.10.2.min.js" language="javascript">
+</script>
+
+
+  
+<script>
+
+  var xml_data = "%1"
+
+  function ATS(){
+      var WEEK_STR_LIST_CN=["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+      var WEEK_STR_LIST_EN=["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      var MONTH_STR_LIST=["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+	  
+	  var _timer=-1;
+	  var _timer_count=0;
+	  var _timerInterval=1000;
+	  var _cur_language = "cn";
+
+	  var _ats = null;
+      
+	  this.init = function (ats) {
+	      this.clear();
+
+	      _ats = ats;
+
+          this.updateView(this);
+          _timer = setInterval(this.updateView, _timerInterval,this);
+      }
+	  this.updateView=function(obj){
+		   
+		   if (_timer_count < 10) {
+				_timer_count++;
+		   }else {
+				_cur_language = _cur_language == "cn"?"en":"cn";
+				_timer_count = 0;
+				
+		   }
+		   if (_cur_language == "cn") {
+		 
+		       $("#txt_this_train").html("本次列车");
+		       $("#txt_1min").html("1分钟");
+		       $("#txt_this_station").html("本站  " + (_ats == null ? "" : _ats["this_station_cn"]));
+		       $("#txt_next_train").html("下一站  " + (_ats == null ? "" : _ats["next_train_cn"]));
+		       $("#txt_destination_station").html("本车开往  " + (_ats == null ? "" : _ats["destination_station_cn"]));
+		       $("#txt_first").html("首班车  " + (_ats == null ? "" : _ats["first_cn"]));
+		       $("#txt_last").html("末班车  " + (_ats == null ? "" : _ats["last_cn"]));
+
+		       updateDateCN();
+              
+		   }else{
+		       $("#txt_this_train").html("This Train");
+		       $("#txt_1min").html("1Min");
+		       $("#txt_this_station").html("This Station  "+(_ats == null ? "" : _ats["this_station_en"]));
+		       $("#txt_next_train").html("Next Station  " + (_ats == null ? "" : _ats["next_train_en"]));
+		       $("#txt_destination_station").html("Destination Station  " + (_ats == null ? "" : _ats["destination_station_en"]));
+		       $("#txt_first").html("First  " + (_ats == null ? "" : _ats["first_en"]));
+		       $("#txt_last").html("Last  " + (_ats == null ? "" : _ats["last_en"]));
+
+		       updateDateEN();
+		   }
+	  }
+	  this.clear = function () {
+	      if (_timer != -1) {
+	          clearInterval(_timer);
+	      }
+	      _timer = -1;
+	      _ats = null;
+	  }
+
+	  var updateDateCN = function () {
+	      
+	      var _date = new Date();
+	      var _str = _date.getFullYear() + "年" + fullDateStr(_date.getMonth() + 1) + "月" + fullDateStr(_date.getDate()) + "日";
+	      
+	      $("#txt_date").html(_str);
+	      $("#txt_week").html( WEEK_STR_LIST_CN[_date.getDay()]);
+	      $("#txt_time").html( fullDateStr(_date.getHours()) + ":" + fullDateStr(_date.getMinutes()) + ":" + fullDateStr(_date.getSeconds()));
+	  }
+
+	  var updateDateEN=function(){
+	      var _date = new Date();
+			
+	      $("#txt_date").html(MONTH_STR_LIST[_date.getMonth()+1]+" "+fullDateStr(_date.getDate()) + ",  "+_date.getFullYear());
+	      $("#txt_week").html( WEEK_STR_LIST_EN[_date.getDay()]);
+	      $("#txt_time").html( fullDateStr(_date.getHours()) + ":" + fullDateStr(_date.getMinutes()) + ":" + fullDateStr(_date.getSeconds()));
+	  }
+	  
+	  var fullDateStr = function (val) {
+	      if (val <= 9) {
+	          return "0" + val;
+	      }
+	      return val + "";
+	  }
+
+  }
+
+  var loadXML = function (xmlString) {
+      var xmlDoc = null;
+
+      if (!window.DOMParser && window.ActiveXObject) {
+          var xmlDomVersions = ['MSXML.2.DOMDocument.6.0', 'MSXML.2.DOMDocument.3.0', 'Microsoft.XMLDOM'];
+          for (var i = 0; i < xmlDomVersions.length; i++) {
+              try {
+                  xmlDoc = new ActiveXObject(xmlDomVersions[i]);
+                  xmlDoc.async = false;
+                  xmlDoc.loadXML(xmlString); //loadXML方法载入xml字符串
+                  break;
+              } catch (e) {
+              }
+          }
+      }
+      else if (window.DOMParser && document.implementation && document.implementation.createDocument) {
+          try {
+              domParser = new DOMParser();
+              xmlDoc = domParser.parseFromString(xmlString, 'text/xml');
+          } catch (e) {
+          }
+      }
+      else {
+          return null;
+      }
+
+      return xmlDoc;
+  }
+  
+  var loadATS = function (xml) {
+      var xmldoc = loadXML(xml);
+      if (xmldoc) {
+          var _first_cn = xmldoc.getElementsByTagName("first_cn")[0].firstChild.nodeValue;
+          var _first_en = xmldoc.getElementsByTagName("first_en")[0].firstChild.nodeValue;
+          var _last_cn = xmldoc.getElementsByTagName("last_cn")[0].firstChild.nodeValue;
+          var _last_en = xmldoc.getElementsByTagName("last_en")[0].firstChild.nodeValue;
+          var _this_station_cn = xmldoc.getElementsByTagName("this_station_cn")[0].firstChild.nodeValue;
+          var _this_station_en = xmldoc.getElementsByTagName("this_station_en")[0].firstChild.nodeValue;
+          var _next_train_cn = xmldoc.getElementsByTagName("next_train_cn")[0].firstChild.nodeValue;
+          var _next_train_en = xmldoc.getElementsByTagName("next_train_en")[0].firstChild.nodeValue;
+          var _destination_station_cn = xmldoc.getElementsByTagName("destination_station_cn")[0].firstChild.nodeValue;
+          var _destination_station_en = xmldoc.getElementsByTagName("destination_station_en")[0].firstChild.nodeValue;
+
+          var _ats = new ATS();
+          _ats.init({ "first_cn": _first_cn, "first_en": _first_en, "last_cn": _last_cn, "last_en": _last_en, "this_station_cn": _this_station_cn, "this_station_en": _this_station_en, "next_train_cn": _next_train_cn, "next_train_en": _next_train_en, "destination_station_cn": _destination_station_cn, "destination_station_en": _destination_station_en });
+      }
+  }
+
+  var __debug = false;
+  if (__debug) {
+      var _xml="<ats>"+
+			   "<first_cn>10:00</first_cn>"+
+			   "<first_en>10:00</first_en>"+
+			   "<last_cn>22:00</last_cn>"+
+			   "<last_en>22:00</last_en>"+
+			   "<this_station_cn>人民广场</this_station_cn>"+
+			   "<this_station_en>People's Square</this_station_en>"+
+			   "<next_train_cn>新闸路</next_train_cn>"+
+			   "<next_train_en>XinZha Road</next_train_en>"+
+			   "<destination_station_cn>上海火车站</destination_station_cn>"+
+			   "<destination_station_en>Shanghai Railway Station</destination_station_en>"+
+			 "</ats>";
+      loadATS(_xml);
+  }
+  
+  
+</script>
+<style type="text/css">
+#txt_this_train {
+	font-size: 36px;
+	color: #000;
+	width: 200px;
+	position: absolute;
+	left: 3px;
+	top: 0px;
+}
+#txt_1min {
+	font-size: 102px;
+	color: #000;
+	width: 400px;
+	position: absolute;
+	left: 403px;
+	top: 133px;
+}
+
+#txt_this_station {
+	font-size: 20px;
+	color: #000;
+	width:auto;
+	position: absolute;
+	left: 12px;
+	top: 392.95px;
+}
+#txt_next_train {
+	font-size: 20px;
+	color: #000;
+	width: auto;
+	position: absolute;
+	left: 12px;
+	top: 431.95px;
+}
+#txt_destination_station {
+	font-size: 20px;
+	color: #000;
+	width: auto;
+	position: absolute;
+	left: 12px;
+	top: 466.95px;
+}
+
+#txt_first {
+	font-size: 18px;
+	color: #000;
+	width: 200px;
+	position: absolute;
+	left: 926.95px;
+	top: 36px;
+}
+#txt_last {
+	font-size: 18px;
+	color: #000;
+	width: 200px;
+	position: absolute;
+	left: 926.95px;
+	top: 63px;
+}
+
+#txt_date {
+	font-size: 18px;
+	color: #000;
+	width: 200px;
+	position: absolute;
+	left: 926.95px;
+	top: 111px;
+}
+#txt_week {
+	font-size: 18px;
+	color: #000;
+	width: 200px;
+	position: absolute;
+	left: 926.95px;
+	top: 139px;
+}
+#txt_time {
+	font-size: 18px;
+	color: #000;
+	width: 200px;
+	position: absolute;
+	left: 926.95px;
+	top: 168px;
+}
+</style>
+</head>
+
+
+<body>
+    <div id="ats_container">
+       <div id="txt_this_train">本次列车</div>
+       <div id="txt_1min">1分钟</div>
+       <div id="txt_this_station">本站</div>
+       <div id="txt_next_train">下一站</div>
+       <div id="txt_destination_station">本车开往</div>
+        
+       <div id="txt_first">首班车</div>
+       <div id="txt_last">末班车</div>
+       
+        <div id="txt_date">2013年07月26日</div>
+        <div id="txt_week">星期日</div>
+        <div id="txt_time">10:30:00</div>
+    </div>
+    <script>loadATS(xml_data);</script>
+ 
+</body>
+</html>

@@ -1,0 +1,316 @@
+﻿
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>ATS</title>
+<script src="jquery-1.10.2.min.js" language="javascript">
+</script>
+
+
+  
+<script>
+
+  var xml_data = "%1"
+
+  function ATS(){
+      var WEEK_STR_LIST_CN=["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+      var WEEK_STR_LIST_EN=["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      var MONTH_STR_LIST=["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+	  
+	  var _timer=-1;
+	  var _timer_count=0;
+	  var _timerInterval=1000;
+	  var _cur_language = "cn";
+
+	  var _ats = null;
+      
+	  this.init = function (ats) {
+	      this.clear();
+
+	      _ats = ats;
+
+          this.updateView(this);
+          _timer = setInterval(this.updateView, _timerInterval,this);
+		  
+		  setInterval(function(){ $("#txt_train_type").fadeOut(200).fadeIn(200); },400);
+      }
+	  this.updateView=function(obj){
+		   
+		   if (_timer_count < 10) {
+				_timer_count++;
+		   }else {
+				_cur_language = _cur_language == "cn"?"en":"cn";
+				_timer_count = 0;
+				
+		   }
+		   
+		   var _is_fast_train=_ats["train_type"]=="fast"?true:false;
+		   var _is_current_stop=_ats["is_current_stop"]=="dock"?true:false;
+		   
+		   if (_cur_language == "cn") {
+		       $("#txt_train").html("本次列车");
+			   
+			   if(_is_fast_train){
+				  $("#txt_train_type").html("<b>( 快车 )</b>");
+			   }else{
+				  $("#txt_train_type").html("<b>( 普通车 )</b>");
+			   }
+			   
+			   if(_is_current_stop){
+				   $("#txt_1min").html("1分钟");
+			   }else{
+				   $("#txt_1min").html("本站不停靠");
+			   }
+			   
+			   
+			   
+		       $("#txt_this_station").html("本站  " + (_ats == null ? "" : _ats["this_station_cn"]));
+		       $("#txt_next_train").html("下一站  " + (_ats == null ? "" : _ats["next_train_cn"]));
+		       $("#txt_destination_station").html("本车开往  " + (_ats == null ? "" : _ats["destination_station_cn"]));
+		       $("#txt_first").html("首班车  " + (_ats == null ? "" : _ats["first_cn"]));
+		       $("#txt_last").html("末班车  " + (_ats == null ? "" : _ats["last_cn"]));
+
+		       updateDateCN();
+              
+		   }else{
+		       $("#txt_train").html("This Train");
+		       if(_is_fast_train){
+				 $("#txt_train_type").html("<b>( fast )</b>");
+			   }else{
+			     $("#txt_train_type").html("<b>( slow )</b>");
+			   }
+			   
+			   if(_is_current_stop){
+				   $("#txt_1min").html("1Min");
+			   }else{
+				   $("#txt_1min").html("No Stop");
+			   }
+			   
+		       $("#txt_this_station").html("This Station  "+(_ats == null ? "" : _ats["this_station_en"]));
+		       $("#txt_next_train").html("Next Station  " + (_ats == null ? "" : _ats["next_train_en"]));
+		       $("#txt_destination_station").html("Destination Station  " + (_ats == null ? "" : _ats["destination_station_en"]));
+		       $("#txt_first").html("First  " + (_ats == null ? "" : _ats["first_en"]));
+		       $("#txt_last").html("Last  " + (_ats == null ? "" : _ats["last_en"]));
+
+		       updateDateEN();
+		   }
+	  }
+	  this.clear = function () {
+	      if (_timer != -1) {
+	          clearInterval(_timer);
+	      }
+	      _timer = -1;
+	      _ats = null;
+	  }
+
+	  var updateDateCN = function () {
+	      
+	      var _date = new Date();
+	      var _str = _date.getFullYear() + "年" + fullDateStr(_date.getMonth() + 1) + "月" + fullDateStr(_date.getDate()) + "日";
+	      
+	      $("#txt_date").html(_str);
+	      $("#txt_week").html( WEEK_STR_LIST_CN[_date.getDay()]);
+	      $("#txt_time").html( fullDateStr(_date.getHours()) + ":" + fullDateStr(_date.getMinutes()) + ":" + fullDateStr(_date.getSeconds()));
+	  }
+
+	  var updateDateEN=function(){
+	      var _date = new Date();
+			
+	      $("#txt_date").html(MONTH_STR_LIST[_date.getMonth()+1]+" "+fullDateStr(_date.getDate()) + ",  "+_date.getFullYear());
+	      $("#txt_week").html( WEEK_STR_LIST_EN[_date.getDay()]);
+	      $("#txt_time").html( fullDateStr(_date.getHours()) + ":" + fullDateStr(_date.getMinutes()) + ":" + fullDateStr(_date.getSeconds()));
+	  }
+	  
+	  var fullDateStr = function (val) {
+	      if (val <= 9) {
+	          return "0" + val;
+	      }
+	      return val + "";
+	  }
+
+  }
+
+  var loadXML = function (xmlString) {
+      var xmlDoc = null;
+
+      if (!window.DOMParser && window.ActiveXObject) {
+          var xmlDomVersions = ['MSXML.2.DOMDocument.6.0', 'MSXML.2.DOMDocument.3.0', 'Microsoft.XMLDOM'];
+          for (var i = 0; i < xmlDomVersions.length; i++) {
+              try {
+                  xmlDoc = new ActiveXObject(xmlDomVersions[i]);
+                  xmlDoc.async = false;
+                  xmlDoc.loadXML(xmlString); //loadXML方法载入xml字符串
+                  break;
+              } catch (e) {
+              }
+          }
+      }
+      else if (window.DOMParser && document.implementation && document.implementation.createDocument) {
+          try {
+              domParser = new DOMParser();
+              xmlDoc = domParser.parseFromString(xmlString, 'text/xml');
+          } catch (e) {
+          }
+      }
+      else {
+          return null;
+      }
+
+      return xmlDoc;
+  }
+  
+  var loadATS = function (xml) {
+      var xmldoc = loadXML(xml);
+      if (xmldoc) {
+	      var _train_type=xmldoc.getElementsByTagName("train_type")[0].firstChild.nodeValue;
+          var _is_current_stop=xmldoc.getElementsByTagName("is_current_stop")[0].firstChild.nodeValue;
+          var _first_cn = xmldoc.getElementsByTagName("first_cn")[0].firstChild.nodeValue;
+          var _first_en = xmldoc.getElementsByTagName("first_en")[0].firstChild.nodeValue;
+          var _last_cn = xmldoc.getElementsByTagName("last_cn")[0].firstChild.nodeValue;
+          var _last_en = xmldoc.getElementsByTagName("last_en")[0].firstChild.nodeValue;
+          var _this_station_cn = xmldoc.getElementsByTagName("this_station_cn")[0].firstChild.nodeValue;
+          var _this_station_en = xmldoc.getElementsByTagName("this_station_en")[0].firstChild.nodeValue;
+          var _next_train_cn = xmldoc.getElementsByTagName("next_train_cn")[0].firstChild.nodeValue;
+          var _next_train_en = xmldoc.getElementsByTagName("next_train_en")[0].firstChild.nodeValue;
+          var _destination_station_cn = xmldoc.getElementsByTagName("destination_station_cn")[0].firstChild.nodeValue;
+          var _destination_station_en = xmldoc.getElementsByTagName("destination_station_en")[0].firstChild.nodeValue;
+
+          var _ats = new ATS();
+          _ats.init({ "train_type":_train_type,"is_current_stop":_is_current_stop,"first_cn": _first_cn, "first_en": _first_en, "last_cn": _last_cn, "last_en": _last_en, "this_station_cn": _this_station_cn, "this_station_en": _this_station_en, "next_train_cn": _next_train_cn, "next_train_en": _next_train_en, "destination_station_cn": _destination_station_cn, "destination_station_en": _destination_station_en });
+      }
+  }
+
+  var __debug = true;
+  if (__debug) {
+      var _xml="<ats>"+
+			   "<first_cn>10:00</first_cn>"+
+			   "<first_en>10:00</first_en>"+
+			   "<last_cn>22:00</last_cn>"+
+			   "<last_en>22:00</last_en>"+
+			   "<train_type>slow</train_type>"+  //fast,slow
+			   "<is_current_stop>not_dock</is_current_stop>"+ //not_dock,dock
+			   "<this_station_cn>人民广场</this_station_cn>"+
+			   "<this_station_en>People's Square</this_station_en>"+
+			   "<next_train_cn>新闸路</next_train_cn>"+
+			   "<next_train_en>XinZha Road</next_train_en>"+
+			   "<destination_station_cn>上海火车站</destination_station_cn>"+
+			   "<destination_station_en>Shanghai Railway Station</destination_station_en>"+
+			 "</ats>";
+      loadATS(_xml);
+  }
+  
+  
+</script>
+<style type="text/css">
+body { margin:0; padding:0; }
+#txt_this_train {
+	font-size: 36px;
+	color: #000;
+	width: auto;
+	position: absolute;
+	left: 3px;
+	top: 0px;
+}
+#txt_1min {
+	font-size: 108px;
+	text-align:center;
+	color: #000;
+	width: 686px;
+	position: absolute;
+	left: 117px;
+	top: 133px;
+}
+
+#txt_this_station {
+	font-size: 24px;
+	color: #000;
+	width:auto;
+	position: absolute;
+	left: 12px;
+	top: 380px;
+}
+#txt_next_train {
+	font-size: 24px;
+	color: #000;
+	width: auto;
+	position: absolute;
+	left: 12px;
+	top: 418px;
+}
+#txt_destination_station {
+	font-size: 24px;
+	color: #000;
+	width: auto;
+	position: absolute;
+	left: 12px;
+	top: 458px;
+}
+
+#txt_first {
+	font-size: 22px;
+	color: #000;
+	width: 200px;
+	position: absolute;
+	left: 926.95px;
+	top: 36px;
+}
+#txt_last {
+	font-size: 22px;
+	color: #000;
+	width: 200px;
+	position: absolute;
+	left: 926.95px;
+	top: 66px;
+}
+
+#txt_date {
+	font-size: 22px;
+	color: #000;
+	width: 200px;
+	position: absolute;
+	left: 926.95px;
+	top: 120px;
+}
+#txt_week {
+	font-size: 22px;
+	color: #000;
+	width: 200px;
+	position: absolute;
+	left: 926.95px;
+	top: 148px;
+}
+#txt_time {
+	font-size: 22px;
+	color: #000;
+	width: 200px;
+	position: absolute;
+	left: 926.95px;
+	top: 177px;
+}
+</style>
+</head>
+
+
+<body>
+    <div id="ats_container">
+       <div id="txt_this_train">
+          <span id="txt_train">本次列车</span>
+          <span id="txt_train_type"></span>
+       </div>
+       <div id="txt_1min">1分钟</div>
+       <div id="txt_this_station">本站</div>
+       <div id="txt_next_train">下一站</div>
+       <div id="txt_destination_station">本车开往</div>
+        
+       <div id="txt_first">首班车</div>
+       <div id="txt_last">末班车</div>
+       
+        <div id="txt_date">2013年07月26日</div>
+        <div id="txt_week">星期日</div>
+        <div id="txt_time">10:30:00</div>
+    </div>
+	<!--
+    <script>loadATS(xml_data);</script>
+    -->
+</body>
+</html>
